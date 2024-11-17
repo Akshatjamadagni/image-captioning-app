@@ -1,0 +1,107 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Caption & Translation System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8">
+        <h1 class="text-3xl font-bold text-center mb-8">Image Caption & Translation System</h1>
+        
+        <!-- Upload Form -->
+        <form id="uploadForm" class="space-y-6">
+            <div class="space-y-4">
+                <label class="block">
+                    <span class="text-gray-700">Select Image:</span>
+                    <input type="file" name="image" accept="image/*" required
+                           class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm">
+                </label>
+                
+                <label class="block">
+                    <span class="text-gray-700">Target Language:</span>
+                    <select name="language" required
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm">
+                        {% for code, name in languages.items() %}
+                            <option value="{{ code }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            
+            <button type="submit"
+                    class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">
+                Process Image
+            </button>
+        </form>
+        
+        <!-- Results Section -->
+        <div id="results" class="mt-8 hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Image Preview -->
+                <div>
+                    <h2 class="text-xl font-semibold mb-4">Uploaded Image</h2>
+                    <img id="previewImage" class="w-full rounded-lg shadow-md">
+                </div>
+                
+                <!-- Captions and Audio -->
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="font-semibold">English Caption:</h3>
+                        <p id="englishCaption" class="mt-2"></p>
+                        <audio id="englishAudio" controls class="mt-2 w-full"></audio>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-semibold">Translated Caption:</h3>
+                        <p id="translatedCaption" class="mt-2"></p>
+                        <audio id="translatedAudio" controls class="mt-2 w-full"></audio>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            
+            try {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Processing...';
+                
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Update UI with results
+                    document.getElementById('previewImage').src = data.image_path;
+                    document.getElementById('englishCaption').textContent = data.caption;
+                    document.getElementById('translatedCaption').textContent = data.translation;
+                    document.getElementById('englishAudio').src = data.en_audio_path;
+                    document.getElementById('translatedAudio').src = data.trans_audio_path;
+                    
+                    // Show results section
+                    document.getElementById('results').classList.remove('hidden');
+                } else {
+                    alert(data.error || 'An error occurred');
+                }
+            } catch (error) {
+                alert('An error occurred while processing the request');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Process Image';
+            }
+        });
+    </script>
+</body>
+</html>
